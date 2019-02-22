@@ -1,16 +1,16 @@
 import WebKit
 
-protocol WebViewDelegate: class {
+public protocol WebViewDelegate: class {
     func webView(_ webView: WebView, didProposeVisitToLocation location: URL, withAction action: Action)
     func webViewDidInvalidatePage(_ webView: WebView)
     func webView(_ webView: WebView, didFailJavaScriptEvaluationWithError error: NSError)
 }
 
-protocol WebViewPageLoadDelegate: class {
+public protocol WebViewPageLoadDelegate: class {
     func webView(_ webView: WebView, didLoadPageWithRestorationIdentifier restorationIdentifier: String)
 }
 
-protocol WebViewVisitDelegate: class {
+public protocol WebViewVisitDelegate: class {
     func webView(_ webView: WebView, didStartVisitWithIdentifier identifier: String, hasCachedSnapshot: Bool)
     func webView(_ webView: WebView, didStartRequestForVisitWithIdentifier identifier: String)
     func webView(_ webView: WebView, didCompleteRequestForVisitWithIdentifier identifier: String)
@@ -20,12 +20,12 @@ protocol WebViewVisitDelegate: class {
     func webView(_ webView: WebView, didCompleteVisitWithIdentifier identifier: String, restorationIdentifier: String)
 }
 
-class WebView: WKWebView {
-    weak var delegate: WebViewDelegate?
-    weak var pageLoadDelegate: WebViewPageLoadDelegate?
-    weak var visitDelegate: WebViewVisitDelegate?
+open class WebView: WKWebView {
+    public weak var delegate: WebViewDelegate?
+    public weak var pageLoadDelegate: WebViewPageLoadDelegate?
+    public weak var visitDelegate: WebViewVisitDelegate?
 
-    init(configuration: WKWebViewConfiguration) {
+    public init(configuration: WKWebViewConfiguration) {
         super.init(frame: CGRect.zero, configuration: configuration)
 
         let bundle = Bundle(for: type(of: self))
@@ -42,7 +42,7 @@ class WebView: WKWebView {
         }
     }
     
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
 
@@ -121,7 +121,7 @@ class WebView: WKWebView {
 }
 
 extension WebView: WKScriptMessageHandler {
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    open func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let message = ScriptMessage.parse(message) else { return }
         
         switch message.name {

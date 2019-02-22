@@ -29,7 +29,7 @@ public extension SessionDelegate {
 open class Session: NSObject {
     open weak var delegate: SessionDelegate?
 
-    open var webView: WKWebView {
+    open var webView: WebView {
         return _webView
     }
 
@@ -246,11 +246,11 @@ extension Session: VisitableDelegate {
 }
 
 extension Session: WebViewDelegate {
-    func webView(_ webView: WebView, didProposeVisitToLocation location: URL, withAction action: Action) {
+    public func webView(_ webView: WebView, didProposeVisitToLocation location: URL, withAction action: Action) {
         delegate?.session(self, didProposeVisitToURL: location, withAction: action)
     }
 
-    func webViewDidInvalidatePage(_ webView: WebView) {
+    public func webViewDidInvalidatePage(_ webView: WebView) {
         if let visitable = topmostVisitable {
             visitable.updateVisitableScreenshot()
             visitable.showVisitableScreenshot()
@@ -259,7 +259,7 @@ extension Session: WebViewDelegate {
         }
     }
 
-    func webView(_ webView: WebView, didFailJavaScriptEvaluationWithError error: NSError) {
+    public func webView(_ webView: WebView, didFailJavaScriptEvaluationWithError error: NSError) {
         if let currentVisit = self.currentVisit , initialized {
             initialized = false
             currentVisit.cancel()
