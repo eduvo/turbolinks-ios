@@ -132,6 +132,11 @@ class Visit: NSObject {
             delegate?.visitRequestDidFinish(self)
         }
     }
+    
+    fileprivate func didRedirect(to: URL) {
+        self.visitable.didRedirect(to: to)
+    }
+    
 }
 
 class ColdBootVisit: Visit, WKNavigationDelegate, WebViewPageLoadDelegate {
@@ -178,6 +183,12 @@ class ColdBootVisit: Visit, WKNavigationDelegate, WebViewPageLoadDelegate {
         }
     }
 
+    func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        if let url = webView.url {
+            self.didRedirect(to: url)
+        }
+    }
+    
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         // Ignore any clicked links before the cold boot finishes navigation
         if navigationAction.navigationType == .linkActivated {

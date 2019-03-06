@@ -30,6 +30,10 @@ open class VisitableViewController: UIViewController, Visitable {
         self.title = visitableView.webView?.title
     }
 
+    open func didRedirect(to: URL) {
+        self.visitableURL = to
+    }
+    
     // MARK: View Lifecycle
 
     open override func viewDidLoad() {

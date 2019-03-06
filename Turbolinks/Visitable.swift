@@ -13,6 +13,7 @@ public protocol Visitable: class {
     var visitableView: VisitableView! { get }
     var visitableURL: URL! { get }
     func visitableDidRender()
+    func didRedirect(to: URL)
 }
 
 extension Visitable {
