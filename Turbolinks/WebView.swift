@@ -46,66 +46,6 @@ open class WebView: WKWebView {
         super.init(coder: coder)
     }
 
-    open override func load(_ request: URLRequest) -> WKNavigation? {
-        requestWithRedirectHandling(request, success: { (newRequest , response, data) in
-            DispatchQueue.main.async {
-                if let data = data, let response = response {
-                    let _ = self.webViewLoad(data: data, response: response)
-                } else {
-                    let _ = super.load(request)
-                }
-            }
-        }, failure: {
-            // let WKWebView handle the network error
-            DispatchQueue.main.async {
-                let _ = super.load(request)
-            }
-        })
-        
-        return nil
-    }
-    
-    private func requestWithRedirectHandling(_ request: URLRequest, success: @escaping (URLRequest, HTTPURLResponse?, Data?) -> Void, failure: @escaping () -> Void) {
-        let sessionConfig = URLSessionConfiguration.default
-        let session = URLSession(configuration: sessionConfig, delegate: self, delegateQueue: nil)
-        let task = session.dataTask(with: request) { (data, response, error) in
-            if let _ = error {
-                failure()
-            } else {
-                if let response = response as? HTTPURLResponse {
-                    let code = response.statusCode
-                    if code == 200 {
-                        // for code 200 return data to load data directly
-                        success(request, response, data)
-                        
-                    } else if code >= 300 && code <  400  {
-                        // for redirect get location in header,and make a new URLRequest
-                        guard let location = response.allHeaderFields["Location"] as? String, let redirectURL = URL(string: location) else {
-                            failure()
-                            return
-                        }
-                        
-                        let request = URLRequest(url: redirectURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 5)
-                        success(request, nil, nil)
-                    } else {
-                        success(request, response, data)
-                    }
-                }
-            }
-        }
-        task.resume()
-    }
-    
-    private func webViewLoad(data: Data, response: URLResponse) -> WKNavigation! {
-        guard let url = response.url else {
-            return nil
-        }
-        
-        let encode = response.textEncodingName ?? "utf8"
-        let mine = response.mimeType ?? "text/html"
-        
-        return self.load(data, mimeType: mine, characterEncodingName: encode, baseURL: url)
-    }
     
     func visitLocation(_ location: URL, withAction action: Action, restorationIdentifier: String?) {
         callJavaScriptFunction("webView.visitLocationWithActionAndRestorationIdentifier", withArguments: [location.absoluteString as Optional<AnyObject>, action.rawValue as Optional<AnyObject>, restorationIdentifier as Optional<AnyObject>])
@@ -178,13 +118,6 @@ open class WebView: WKWebView {
         }
         
         return nil
-    }
-}
-
-extension WebView : URLSessionTaskDelegate {
-    
-    public func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
-        completionHandler(request)
     }
 }
 
