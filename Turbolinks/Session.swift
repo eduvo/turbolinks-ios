@@ -5,6 +5,7 @@ public protocol SessionDelegate: class {
     func session(_ session: Session, didProposeVisitToURL URL: URL, withAction action: Action)
     func session(_ session: Session, didFailRequestForVisitable visitable: Visitable, withError error: NSError)
     func session(_ session: Session, openExternalURL URL: URL)
+    func session(_ session: Session, didRedirectToURL: URL)
     func sessionDidLoadWebView(_ session: Session)
     func sessionDidStartRequest(_ session: Session)
     func sessionDidFinishRequest(_ session: Session)
@@ -192,6 +193,10 @@ extension Session: VisitDelegate {
             refreshing = false
             visit.visitable.visitableDidRefresh()
         }
+    }
+    
+    func visitDidRedirect(_ to: URL) {
+        delegate?.session(self, didRedirectToURL: to)
     }
 }
 

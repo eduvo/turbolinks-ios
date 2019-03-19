@@ -15,6 +15,8 @@ protocol VisitDelegate: class {
     func visitRequestDidStart(_ visit: Visit)
     func visit(_ visit: Visit, requestDidFailWithError error: NSError)
     func visitRequestDidFinish(_ visit: Visit)
+
+    func visitDidRedirect(_ to: URL)
 }
 
 enum VisitState {
