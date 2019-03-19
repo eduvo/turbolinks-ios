@@ -136,6 +136,7 @@ class Visit: NSObject {
     }
     
     fileprivate func didRedirect(to: URL) {
+        self.delegate?.visitDidRedirect(to)
         self.visitable.didRedirect(to: to)
     }
     
