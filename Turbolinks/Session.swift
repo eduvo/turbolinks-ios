@@ -6,6 +6,9 @@ public protocol SessionDelegate: class {
     func session(_ session: Session, didFailRequestForVisitable visitable: Visitable, withError error: NSError)
     func session(_ session: Session, openExternalURL URL: URL)
     func session(_ session: Session, didRedirectToURL: URL)
+    func session(_ session: Session, preProcessingForURL: URL) -> Bool
+    func session(_ session: Session, postProcessingForResponse: WKNavigationResponse) -> Bool
+    
     func sessionDidLoadWebView(_ session: Session)
     func sessionDidStartRequest(_ session: Session)
     func sessionDidFinishRequest(_ session: Session)
@@ -24,6 +27,16 @@ public extension SessionDelegate {
     }
 
     func sessionDidFinishRequest(_ session: Session) {
+    }
+
+    func session(_ session: Session, preProcessingForURL: URL) -> Bool {
+        print("default url preprocessing...")
+        return false // default behavior: always continue with pre processing
+    }
+    
+    func session(_ session: Session, postProcessingForResponse: WKNavigationResponse) -> Bool {
+        print("default url postprocessing...")
+        return false // default behavior: always continue with post processing
     }
 }
 
@@ -198,6 +211,20 @@ extension Session: VisitDelegate {
     func visitDidRedirect(_ to: URL) {
         delegate?.session(self, didRedirectToURL: to)
     }
+    
+    func performPreprocessing(_ url: URL?) -> Bool {
+        if let delegate = self.delegate, let url = url {
+            return delegate.session(self, preProcessingForURL: url)
+        }
+        return false;
+    }
+    
+    func performPostprocessing(_ navigationResponse: WKNavigationResponse) -> Bool {
+        if let delegate = self.delegate {
+            return delegate.session(self, postProcessingForResponse: navigationResponse)
+        }
+        return false
+    }
 }
 
 extension Session: VisitableDelegate {
@@ -252,7 +279,9 @@ extension Session: VisitableDelegate {
 
 extension Session: WebViewDelegate {
     public func webView(_ webView: WebView, didProposeVisitToLocation location: URL, withAction action: Action) {
-        delegate?.session(self, didProposeVisitToURL: location, withAction: action)
+        if !(performPreprocessing(location)) {
+            delegate?.session(self, didProposeVisitToURL: location, withAction: action)
+        }
     }
 
     public func webViewDidInvalidatePage(_ webView: WebView) {
@@ -276,12 +305,18 @@ extension Session: WebViewDelegate {
 extension Session: WKNavigationDelegate {
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> ()) {
         let navigationDecision = NavigationDecision(navigationAction: navigationAction)
-        decisionHandler(navigationDecision.policy)
 
-        if let URL = navigationDecision.externallyOpenableURL {
-            openExternalURL(URL)
-        } else if navigationDecision.shouldReloadPage {
-            reload()
+        let processingURL = (navigationAction.navigationType == .linkActivated || navigationDecision.isMainFrameNavigation) ? navigationAction.request.url : nil
+        if performPreprocessing(processingURL) {
+            decisionHandler(.cancel)
+        } else {
+            decisionHandler(navigationDecision.policy)
+            
+            if let URL = navigationDecision.externallyOpenableURL {
+                openExternalURL(URL)
+            } else if navigationDecision.shouldReloadPage {
+                reload()
+            }
         }
     }
 
