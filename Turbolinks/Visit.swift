@@ -8,6 +8,7 @@ protocol VisitDelegate: class {
     func visitDidComplete(_ visit: Visit)
     func visitDidFail(_ visit: Visit)
     func visitDidFinish(_ visit: Visit)
+    func visitDidFinishWithPreprocessing(_ visit: Visit)
 
     func visitWillLoadResponse(_ visit: Visit)
     func visitDidRender(_ visit: Visit)
@@ -17,7 +18,7 @@ protocol VisitDelegate: class {
     func visitRequestDidFinish(_ visit: Visit)
 
     func visitDidRedirect(_ to: URL)
-    func performPreprocessing(_ url: URL?) -> Bool
+    func performPreprocessing(_ visit: Visit?, URL: URL?) -> Bool
     func performPostprocessing(_ navigationResponse: WKNavigationResponse) -> Bool
 }
 
@@ -93,8 +94,8 @@ class Visit: NSObject {
     fileprivate func failVisit() {}
 
     // Mark: Processing
-    public func handlePreprocessing(url: URL?, _ callback: ((Bool) -> Void)? = nil) {
-        let finishedPreProcess = (url != nil) && (delegate?.performPreprocessing(url) ?? false)
+    public func handlePreprocessing(_ visit: Visit, URL: URL?, _ callback: ((Bool) -> Void)? = nil) {
+        let finishedPreProcess = (URL != nil) && (delegate?.performPreprocessing(visit, URL: URL) ?? false)
         callback?(finishedPreProcess)
     }
 
@@ -208,7 +209,7 @@ class ColdBootVisit: Visit, WKNavigationDelegate, WebViewPageLoadDelegate {
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         // Ignore any clicked links before the cold boot finishes navigation
         if navigationAction.navigationType == .linkActivated {
-            handlePreprocessing(url: navigationAction.request.url) { (finishedPreprocessing) in
+            handlePreprocessing(self, URL: navigationAction.request.url) { (finishedPreprocessing) in
                 if (finishedPreprocessing) {
                     // preprocessing did take place => cancel further handling
                     decisionHandler(.cancel)
@@ -221,7 +222,7 @@ class ColdBootVisit: Visit, WKNavigationDelegate, WebViewPageLoadDelegate {
             }
         } else {
             if (navigationAction.targetFrame?.isMainFrame ?? false) {
-                handlePreprocessing(url: navigationAction.request.url) { (finishedPreprocessing) in
+                handlePreprocessing(self, URL: navigationAction.request.url) { (finishedPreprocessing) in
                     if (finishedPreprocessing) {
                         decisionHandler(.cancel)
                     } else {

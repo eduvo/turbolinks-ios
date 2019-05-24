@@ -151,6 +151,7 @@ open class Session: NSObject {
 }
 
 extension Session: VisitDelegate {
+    
     func visitRequestDidStart(_ visit: Visit) {
         delegate?.sessionDidStartRequest(self)
     }
@@ -159,6 +160,12 @@ extension Session: VisitDelegate {
         delegate?.sessionDidFinishRequest(self)
     }
 
+    func visitDidFinishWithPreprocessing(_ visit: Visit) {
+        visitRequestDidFinish(visit)
+        visitDidFinish(visit)
+        visitDidRender(visit)
+    }
+    
     func visit(_ visit: Visit, requestDidFailWithError error: NSError) {
         delegate?.session(self, didFailRequestForVisitable: visit.visitable, withError: error)
     }
@@ -212,9 +219,12 @@ extension Session: VisitDelegate {
         delegate?.session(self, didRedirectToURL: to)
     }
     
-    func performPreprocessing(_ url: URL?) -> Bool {
-        if let delegate = self.delegate, let url = url {
-            return delegate.session(self, preProcessingForURL: url)
+    func performPreprocessing(_ visit: Visit?, URL: URL?) -> Bool {
+        if let delegate = self.delegate, let url = URL, let visit = visit {
+            if delegate.session(self, preProcessingForURL: url) {
+                self.visitDidFinishWithPreprocessing(visit)
+                return true;
+            }
         }
         return false;
     }
@@ -279,7 +289,7 @@ extension Session: VisitableDelegate {
 
 extension Session: WebViewDelegate {
     public func webView(_ webView: WebView, didProposeVisitToLocation location: URL, withAction action: Action) {
-        if !(performPreprocessing(location)) {
+        if !(performPreprocessing(currentVisit, URL: location)) {
             delegate?.session(self, didProposeVisitToURL: location, withAction: action)
         }
     }
@@ -307,7 +317,7 @@ extension Session: WKNavigationDelegate {
         let navigationDecision = NavigationDecision(navigationAction: navigationAction)
 
         let processingURL = (navigationAction.navigationType == .linkActivated || navigationDecision.isMainFrameNavigation) ? navigationAction.request.url : nil
-        if performPreprocessing(processingURL) {
+        if performPreprocessing(currentVisit, URL: processingURL) {
             decisionHandler(.cancel)
         } else {
             decisionHandler(navigationDecision.policy)
