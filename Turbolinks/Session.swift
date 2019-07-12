@@ -106,6 +106,7 @@ open class Session: NSObject {
     // MARK: Visitable activation
 
     fileprivate var activatedVisitable: Visitable?
+    open var interactiveTransition: Bool = false
 
     fileprivate func activateVisitable(_ visitable: Visitable) {
         if visitable !== activatedVisitable {
@@ -239,6 +240,8 @@ extension Session: VisitDelegate {
 
 extension Session: VisitableDelegate {
     public func visitableViewWillAppear(_ visitable: Visitable) {
+		if self.interactiveTransition { return }
+		
         guard let topmostVisit = self.topmostVisit, let currentVisit = self.currentVisit else { return }
 
         if visitable === topmostVisit.visitable && visitable.visitableViewController.isMovingToParent {
@@ -258,6 +261,8 @@ extension Session: VisitableDelegate {
     }
 
     public func visitableViewDidAppear(_ visitable: Visitable) {
+        if self.interactiveTransition { return }
+
         if let currentVisit = self.currentVisit , visitable === currentVisit.visitable {
             // Appearing after successful navigation
             completeNavigationForCurrentVisit()
