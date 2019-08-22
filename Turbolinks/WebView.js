@@ -113,8 +113,8 @@
 
     addEventListener("error", function(event) {
         var error = event.message + " (" + event.filename + ":" + event.lineno + ":" + event.colno + ")"
-        webView.errorRaised(error)
-    }, false)
+        this.webView.errorRaised(error)
+    }.bind(this), false)
 
     webView.pageLoaded()
 })()
