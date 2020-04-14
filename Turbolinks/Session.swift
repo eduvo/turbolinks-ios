@@ -66,8 +66,15 @@ open class Session: NSObject {
     fileprivate var currentVisit: Visit?
     fileprivate var topmostVisit: Visit?
 
+    open var currentVisitIdentifier: String {
+        return currentVisit?.visitIdentifier() ?? ""
+    }
+    
     open var topmostVisitable: Visitable? {
         return topmostVisit?.visitable
+    }
+    open var topmostVisitIdentifier: String {
+        return topmostVisit?.visitIdentifier() ?? ""
     }
 
     open func visit(_ visitable: Visitable) {
