@@ -169,9 +169,9 @@ extension Session: VisitDelegate {
     }
 
     func visitDidFinishWithPreprocessing(_ visit: Visit) {
-        visitRequestDidFinish(visit)
+        //visitRequestDidFinish(visit) - request was not executed
         visitDidFinish(visit)
-        visitDidRender(visit)
+        //visitDidRender(visit) - page was not rendered
     }
     
     func visit(_ visit: Visit, requestDidFailWithError error: NSError) {
