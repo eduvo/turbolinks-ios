@@ -17,6 +17,7 @@ protocol VisitDelegate: class {
     func visit(_ visit: Visit, requestDidFailWithError error: NSError)
     func visitRequestDidFinish(_ visit: Visit)
 
+    func visitUpdateURL(_ url: URL)
     func visitDidRedirect(_ to: URL)
     func performPreprocessing(_ visit: Visit?, URL: URL?) -> Bool
     func performPostprocessing(_ navigationResponse: WKNavigationResponse) -> Bool
@@ -93,6 +94,10 @@ class Visit: NSObject {
     fileprivate func completeVisit() {}
     fileprivate func failVisit() {}
 
+    public func visitIdentifier() -> String {
+        return ""
+    }
+    
     // Mark: Processing
     public func handlePreprocessing(_ visit: Visit, URL: URL?, _ callback: ((Bool) -> Void)? = nil) {
         let finishedPreProcess = (URL != nil) && (delegate?.performPreprocessing(visit, URL: URL) ?? false)
@@ -157,8 +162,13 @@ class Visit: NSObject {
 }
 
 class ColdBootVisit: Visit, WKNavigationDelegate, WebViewPageLoadDelegate {
+    fileprivate var identifier = UUID().uuidString
     fileprivate var navigation: WKNavigation?
 
+    override func visitIdentifier() -> String {
+        return identifier
+    }
+    
     override fileprivate func startVisit() {
         webView.navigationDelegate = self
         webView.pageLoadDelegate = self
@@ -289,10 +299,14 @@ class ColdBootVisit: Visit, WKNavigationDelegate, WebViewPageLoadDelegate {
 }
 
 class JavaScriptVisit: Visit, WebViewVisitDelegate {
-    fileprivate var identifier = "(pending)"
+    fileprivate var identifier = ""
 
     override var description: String {
         return "<\(type(of: self)) \(identifier): state=\(state) location=\(location)>"
+    }
+    
+    override func visitIdentifier() -> String {
+        return identifier
     }
 
     override fileprivate func startVisit() {

@@ -2,13 +2,14 @@ import UIKit
 import WebKit
 
 public protocol SessionDelegate: class {
-    func session(_ session: Session, didProposeVisitToURL URL: URL, withAction action: Action)
+    func session(_ session: Session, didProposeVisitToURL: URL, withAction action: Action)
     func session(_ session: Session, didFailRequestForVisitable visitable: Visitable, withError error: NSError)
-    func session(_ session: Session, openExternalURL URL: URL)
-    func session(_ session: Session, didRedirectToURL: URL)
     func session(_ session: Session, preProcessingForURL: URL) -> Bool
     func session(_ session: Session, postProcessingForResponse: WKNavigationResponse) -> Bool
     
+    func sessionOpenExternal(_ session: Session, url: URL)
+    func sessionUpdate(_ session: Session, url: URL)
+    func sessionRedirectTo(_ session: Session, url: URL)
     func sessionDidLoadWebView(_ session: Session)
     func sessionDidStartRequest(_ session: Session)
     func sessionDidFinishRequest(_ session: Session)
@@ -19,8 +20,8 @@ public extension SessionDelegate {
         session.webView.navigationDelegate = session
     }
 
-    func session(_ session: Session, openExternalURL URL: Foundation.URL) {
-        UIApplication.shared.openURL(URL)
+    func session(_ session: Session, openExternalURL url: Foundation.URL) {
+        UIApplication.shared.openURL(url)
     }
 
     func sessionDidStartRequest(_ session: Session) {
@@ -66,10 +67,24 @@ open class Session: NSObject {
     fileprivate var currentVisit: Visit?
     fileprivate var topmostVisit: Visit?
 
+    open var currentVisitIdentifier: String {
+        return currentVisit?.visitIdentifier() ?? ""
+    }
+    
     open var topmostVisitable: Visitable? {
         return topmostVisit?.visitable
     }
+    open var topmostVisitIdentifier: String {
+        return topmostVisit?.visitIdentifier() ?? ""
+    }
 
+    open func updateCurrentVisitable() {
+        if ((webView.url != nil) && (currentVisit != nil) && (currentVisit?.location != webView.url)) {
+            currentVisit?.location = webView.url!
+            currentVisit?.delegate?.visitUpdateURL(webView.url!)
+        }
+    }
+    
     open func visit(_ visitable: Visitable) {
         visitVisitable(visitable, action: .Advance)
     }
@@ -88,6 +103,11 @@ open class Session: NSObject {
             visit = ColdBootVisit(visitable: visitable, action: action, webView: _webView)
         }
 
+        // update a changed URL before new visit is executed
+        if (action == Action.Advance) {
+            updateCurrentVisitable()
+        }
+        
         currentVisit?.cancel()
         currentVisit = visit
 
@@ -97,6 +117,8 @@ open class Session: NSObject {
 
     open func reload() {
         if let visitable = topmostVisitable {
+            // update a changed URL before reload is executed
+            updateCurrentVisitable()
             initialized = false
             visit(visitable)
             topmostVisit = currentVisit
@@ -162,9 +184,9 @@ extension Session: VisitDelegate {
     }
 
     func visitDidFinishWithPreprocessing(_ visit: Visit) {
-        visitRequestDidFinish(visit)
+        //visitRequestDidFinish(visit) - request was not executed
         visitDidFinish(visit)
-        visitDidRender(visit)
+        //visitDidRender(visit) - page was not rendered
     }
     
     func visit(_ visit: Visit, requestDidFailWithError error: NSError) {
@@ -217,7 +239,11 @@ extension Session: VisitDelegate {
     }
     
     func visitDidRedirect(_ to: URL) {
-        delegate?.session(self, didRedirectToURL: to)
+        delegate?.sessionRedirectTo(self, url: to)
+    }
+    
+    func visitUpdateURL(_ url: URL) {
+        delegate?.sessionUpdate(self, url: url)
     }
     
     func performPreprocessing(_ visit: Visit?, URL: URL?) -> Bool {
@@ -365,7 +391,7 @@ extension Session: WKNavigationDelegate {
         }
     }
 
-    fileprivate func openExternalURL(_ URL: Foundation.URL) {
-        delegate?.session(self, openExternalURL: URL)
+    fileprivate func openExternalURL(_ url: Foundation.URL) {
+        delegate?.sessionOpenExternal(self, url: url)
     }
 }
