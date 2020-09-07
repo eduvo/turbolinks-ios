@@ -79,7 +79,9 @@ open class Session: NSObject {
     }
 
     open func updateCurrentVisitable() {
-        if ((webView.url != nil) && (currentVisit != nil) && (currentVisit?.location != webView.url)) {
+        // if page was loaded by a submit request, don't update before reload
+        if ((webView.url != nil) && (currentVisit != nil) &&
+            (currentVisit?.location != webView.url) && !webView.isSubmitRequest) {
             currentVisit?.location = webView.url!
             currentVisit?.delegate?.visitUpdateURL(webView.url!)
         }
@@ -346,8 +348,13 @@ extension Session: WebViewDelegate {
 extension Session: WKNavigationDelegate {
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> ()) {
         let navigationDecision = NavigationDecision(navigationAction: navigationAction)
+        let isSubmitRequest = (navigationAction.navigationType == .formSubmitted || navigationAction.navigationType == .formResubmitted)
+        
+        if let webView = webView as? WebView {
+            webView.isSubmitRequest = isSubmitRequest
+        }
 
-        if (navigationAction.navigationType == .formSubmitted || navigationAction.navigationType == .formResubmitted) {
+        if isSubmitRequest {
             decisionHandler(.allow)
         } else {
             let processingURL = (navigationAction.navigationType == .linkActivated || navigationDecision.isMainFrameNavigation) ? navigationAction.request.url : nil

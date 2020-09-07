@@ -21,6 +21,7 @@ public protocol WebViewVisitDelegate: class {
 }
 
 open class WebView: WKWebView {
+    public var isSubmitRequest: Bool = false
     public weak var delegate: WebViewDelegate?
     public weak var pageLoadDelegate: WebViewPageLoadDelegate?
     public weak var visitDelegate: WebViewVisitDelegate?
