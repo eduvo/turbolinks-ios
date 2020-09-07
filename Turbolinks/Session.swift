@@ -347,16 +347,20 @@ extension Session: WKNavigationDelegate {
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> ()) {
         let navigationDecision = NavigationDecision(navigationAction: navigationAction)
 
-        let processingURL = (navigationAction.navigationType == .linkActivated || navigationDecision.isMainFrameNavigation) ? navigationAction.request.url : nil
-        if performPreprocessing(currentVisit, URL: processingURL) {
-            decisionHandler(.cancel)
+        if (navigationAction.navigationType == .formSubmitted || navigationAction.navigationType == .formResubmitted) {
+            decisionHandler(.allow)
         } else {
-            decisionHandler(navigationDecision.policy)
-            
-            if let URL = navigationDecision.externallyOpenableURL {
-                openExternalURL(URL)
-            } else if navigationDecision.shouldReloadPage {
-                reload()
+            let processingURL = (navigationAction.navigationType == .linkActivated || navigationDecision.isMainFrameNavigation) ? navigationAction.request.url : nil
+            if performPreprocessing(currentVisit, URL: processingURL) {
+                decisionHandler(.cancel)
+            } else {
+                decisionHandler(navigationDecision.policy)
+                
+                if let URL = navigationDecision.externallyOpenableURL {
+                    openExternalURL(URL)
+                } else if navigationDecision.shouldReloadPage {
+                    reload()
+                }
             }
         }
     }
