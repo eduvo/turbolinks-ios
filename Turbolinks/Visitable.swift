@@ -12,6 +12,7 @@ public protocol Visitable: class {
     var visitableDelegate: VisitableDelegate? { get set } 
     var visitableView: VisitableView! { get }
     var visitableURL: URL! { get }
+    var withColdBoot: Bool { get }
     func visitableDidRender()
     func didRedirect(to: URL)
 }

@@ -98,7 +98,7 @@ open class Session: NSObject {
 
         let visit: Visit
 
-        if initialized {
+        if initialized && !visitable.withColdBoot {
             visit = JavaScriptVisit(visitable: visitable, action: action, webView: _webView)
             visit.restorationIdentifier = restorationIdentifierForVisitable(visitable)
         } else {

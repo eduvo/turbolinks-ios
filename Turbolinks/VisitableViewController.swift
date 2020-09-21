@@ -4,6 +4,7 @@ open class VisitableViewController: UIViewController, Visitable {
     open weak var visitableDelegate: VisitableDelegate?
 
     open var visitableURL: URL!
+    open var withColdBoot: Bool = false
 
     public convenience init(url: URL) {
         self.init()
