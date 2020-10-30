@@ -51,6 +51,7 @@ open class Session: NSObject {
     fileprivate var _webView: WebView
     fileprivate var initialized = false
     fileprivate var refreshing = false
+    fileprivate var coldBootOnNextRequest = false
 
     public init(webViewConfiguration: WKWebViewConfiguration) {
         _webView = WebView(configuration: webViewConfiguration)
@@ -77,6 +78,10 @@ open class Session: NSObject {
     open var topmostVisitIdentifier: String {
         return topmostVisit?.visitIdentifier() ?? ""
     }
+    
+    open func resetToColdBoot() {
+        coldBootOnNextRequest = true
+    }
 
     open func updateCurrentVisitable() {
         // if page was loaded by a submit request, don't update before reload
@@ -98,7 +103,7 @@ open class Session: NSObject {
 
         let visit: Visit
 
-        if initialized && !visitable.withColdBoot {
+        if initialized && !visitable.withColdBoot && !coldBootOnNextRequest {
             visit = JavaScriptVisit(visitable: visitable, action: action, webView: _webView)
             visit.restorationIdentifier = restorationIdentifierForVisitable(visitable)
         } else {
@@ -234,6 +239,7 @@ extension Session: VisitDelegate {
     }
 
     func visitDidFinish(_ visit: Visit) {
+        coldBootOnNextRequest = false
         if refreshing {
             refreshing = false
             visit.visitable.visitableDidRefresh()
