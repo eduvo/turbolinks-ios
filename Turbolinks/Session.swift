@@ -4,6 +4,7 @@ import WebKit
 public protocol SessionDelegate: class {
     func session(_ session: Session, didProposeVisitToURL: URL, withAction action: Action)
     func session(_ session: Session, didFailRequestForVisitable visitable: Visitable, withError error: NSError)
+    func session(_ session: Session, isLocalURL: URL) -> Bool
     func session(_ session: Session, preProcessingForURL: URL) -> Bool
     func session(_ session: Session, postProcessingForResponse: WKNavigationResponse) -> Bool
     
@@ -28,6 +29,10 @@ public extension SessionDelegate {
     }
 
     func sessionDidFinishRequest(_ session: Session) {
+    }
+    
+    func session(_ session: Session, isLocalURL: URL) -> Bool {
+        return false
     }
 
     func session(_ session: Session, preProcessingForURL: URL) -> Bool {
@@ -137,7 +142,7 @@ open class Session: NSObject {
     fileprivate var activatedVisitable: Visitable?
     open var interactiveTransition: Bool = false
 
-    fileprivate func activateVisitable(_ visitable: Visitable) {
+    open func activateVisitable(_ visitable: Visitable) {
         if visitable !== activatedVisitable {
             if let activatedVisitable = self.activatedVisitable {
                 deactivateVisitable(activatedVisitable, showScreenshot: true)
@@ -148,7 +153,7 @@ open class Session: NSObject {
         }
     }
 
-    fileprivate func deactivateVisitable(_ visitable: Visitable, showScreenshot: Bool = false) {
+    open func deactivateVisitable(_ visitable: Visitable, showScreenshot: Bool = false) {
         if visitable === activatedVisitable {
             if showScreenshot {
                 visitable.updateVisitableScreenshot()
@@ -367,12 +372,17 @@ extension Session: WKNavigationDelegate {
             if performPreprocessing(currentVisit, URL: processingURL) {
                 decisionHandler(.cancel)
             } else {
-                decisionHandler(navigationDecision.policy)
-                
-                if let URL = navigationDecision.externallyOpenableURL {
-                    openExternalURL(URL)
-                } else if navigationDecision.shouldReloadPage {
-                    reload()
+                let URL = navigationDecision.externallyOpenableURL
+                if let url = URL, (delegate?.session(self, isLocalURL: url) == true) {
+                    decisionHandler(.allow)
+                    delegate?.session(self, didProposeVisitToURL: url, withAction: Action.Advance)
+                } else {
+                    decisionHandler(navigationDecision.policy)
+                    if let url = URL {
+                        openExternalURL(url)
+                    } else if navigationDecision.shouldReloadPage {
+                        reload()
+                    }
                 }
             }
         }
