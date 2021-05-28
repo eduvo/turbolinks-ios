@@ -5,6 +5,7 @@ open class VisitableViewController: UIViewController, Visitable {
 
     open var visitableURL: URL!
     open var withColdBoot: Bool = false
+    open var isWebViewVisitable: Bool = true
 
     public convenience init(url: URL) {
         self.init()

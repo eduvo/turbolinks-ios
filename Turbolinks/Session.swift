@@ -90,7 +90,7 @@ open class Session: NSObject {
 
     open func updateCurrentVisitable() {
         // if page was loaded by a submit request, don't update before reload
-        if ((webView.url != nil) && (currentVisit != nil) &&
+        if ((webView.url != nil) && (currentVisit != nil) && (currentVisit?.visitable.isWebViewVisitable == true) &&
             (currentVisit?.location != webView.url) && !webView.isSubmitRequest) {
             currentVisit?.location = webView.url!
             currentVisit?.delegate?.visitUpdateURL(webView.url!)
@@ -108,18 +108,21 @@ open class Session: NSObject {
 
         let visit: Visit
 
-        if initialized && !visitable.withColdBoot && !coldBootOnNextRequest {
-            visit = JavaScriptVisit(visitable: visitable, action: action, webView: _webView)
-            visit.restorationIdentifier = restorationIdentifierForVisitable(visitable)
+        if visitable.isWebViewVisitable {
+            if initialized && !visitable.withColdBoot && !coldBootOnNextRequest {
+                visit = JavaScriptVisit(visitable: visitable, action: action, webView: _webView)
+                visit.restorationIdentifier = restorationIdentifierForVisitable(visitable)
+            } else {
+                visit = ColdBootVisit(visitable: visitable, action: action, webView: _webView)
+            }
         } else {
-            visit = ColdBootVisit(visitable: visitable, action: action, webView: _webView)
+            visit = Visit(visitable: visitable, action: action, webView: _webView)
         }
-
+        
         // update a changed URL before new visit is executed
         if (action == Action.Advance) {
             updateCurrentVisitable()
         }
-        
         currentVisit?.cancel()
         currentVisit = visit
 
