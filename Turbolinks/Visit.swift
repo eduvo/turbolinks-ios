@@ -42,6 +42,7 @@ class Visit: NSObject {
     var location: URL
     var hasCachedSnapshot: Bool = false
     var restorationIdentifier: String?
+    var referer: String?
 
     override var description: String {
         return "<\(type(of: self)): state=\(state) location=\(location)>"
@@ -173,7 +174,10 @@ class ColdBootVisit: Visit, WKNavigationDelegate, WebViewPageLoadDelegate {
         webView.navigationDelegate = self
         webView.pageLoadDelegate = self
 
-        let request = URLRequest(url: location)
+        var request = URLRequest(url: location)
+        if let referer = referer {
+            request.addValue(referer, forHTTPHeaderField: "Referer")
+        }
         navigation = webView.load(request)
 
         delegate?.visitDidStart(self)

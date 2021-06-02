@@ -109,11 +109,18 @@ open class Session: NSObject {
         let visit: Visit
 
         if visitable.isWebViewVisitable {
-            if initialized && !visitable.withColdBoot && !coldBootOnNextRequest {
+            var fixedReferer: String? = nil
+            if let topVisitable = topmostVisit,
+               topmostVisitable?.isWebViewVisitable == false {
+                fixedReferer = topVisitable.location.absoluteString
+            }
+            
+            if initialized && !visitable.withColdBoot && !coldBootOnNextRequest && (fixedReferer == nil) {
                 visit = JavaScriptVisit(visitable: visitable, action: action, webView: _webView)
                 visit.restorationIdentifier = restorationIdentifierForVisitable(visitable)
             } else {
                 visit = ColdBootVisit(visitable: visitable, action: action, webView: _webView)
+                visit.referer = fixedReferer
             }
         } else {
             visit = Visit(visitable: visitable, action: action, webView: _webView)
